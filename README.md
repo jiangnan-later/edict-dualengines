@@ -1,11 +1,11 @@
-<h1 align="center">⚔️ 三省六部 · Edict</h1>
+<h1 align="center">⚔️ 三省六部 · Edict Dual Engines</h1>
 
 <p align="center">
-  <strong>我用 1300 年前的帝国制度，重新设计了 AI 多 Agent 协作架构。<br>结果发现，古人比现代 AI 框架更懂分权制衡。</strong>
+  <strong>我用 1300 年前的帝国制度，重新设计了 AI 多 Agent 协作架构。<br>现在同时支持 OpenClaw 与 Hermes Agent 双引擎运行。</strong>
 </p>
 
 <p align="center">
-  <sub>12 个 AI Agent（11 个业务角色 + 1 个兼容角色）组成三省六部：太子分拣、中书省规划、门下省审核封驳、尚书省派发、六部+吏部并行执行。<br>比 CrewAI 多一层<b>制度性审核</b>，比 AutoGen 多一个<b>实时看板</b>。</sub>
+  <sub>12 个 AI Agent（11 个业务角色 + 1 个兼容角色）组成三省六部：太子分拣、中书省规划、门下省审核封驳、尚书省派发、六部+吏部并行执行。<br>比 CrewAI 多一层<b>制度性审核</b>，比 AutoGen 多一个<b>实时看板</b>，并可在 <b>OpenClaw / Hermes</b> 之间切换。</sub>
 </p>
 
 <p align="center">
@@ -20,7 +20,9 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/OpenClaw-Required-blue?style=flat-square" alt="OpenClaw">
+  <img src="https://img.shields.io/badge/OpenClaw-Supported-blue?style=flat-square" alt="OpenClaw">
+  <img src="https://img.shields.io/badge/Hermes-Agent_Ready-7C3AED?style=flat-square" alt="Hermes Agent">
+  <img src="https://img.shields.io/badge/Dual--Engine-OpenClaw_%2B_Hermes-111827?style=flat-square" alt="Dual Engine">
   <img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/Agents-12_Specialized-8B5CF6?style=flat-square" alt="Agents">
   <img src="https://img.shields.io/badge/Dashboard-Real--time-F59E0B?style=flat-square" alt="Dashboard">
@@ -32,6 +34,26 @@
 <p align="center">
   <img src="https://img.shields.io/badge/公众号-cft0808-07C160?style=for-the-badge&logo=wechat&logoColor=white" alt="WeChat">
 </p>
+
+---
+
+## 🚦 当前版本状态
+
+**Edict Dual Engines** 当前已完成从 OpenClaw 单引擎到 **OpenClaw + Hermes Agent 双引擎** 的适配：
+
+- ✅ **Hermes Runtime**：Dashboard 可直接通过 `hermes chat -q ... --source edict` 派发各省部 Agent。
+- ✅ **OpenClaw Runtime**：保留原 OpenClaw Agent / Gateway 适配路径，老部署可继续使用。
+- ✅ **模型配置面板**：空配置时自动读取 Hermes 默认模型/provider，并为 11 个 Agent 生成可用配置。
+- ✅ **技能配置面板**：空配置时自动扫描 `~/.hermes/skills/**/SKILL.md`，展示本地 Hermes Skills。
+- ✅ **自动续派**：Agent 通过 `kanban_update.py state` 改状态后，Dashboard 定时巡检会补派下一阶段 Agent，并通过 `lastDispatchState` 防止重复派发。
+- ✅ **端到端验收**：已验证真实圣旨流程可完成 `太子 → 中书 → 门下 → 尚书 → 工部 → Done` 闭环。
+
+推荐新部署优先使用 Hermes：
+
+```bash
+export EDICT_AGENT_RUNTIME=hermes
+python3 dashboard/server.py --host 0.0.0.0 --port 7891
+```
 
 ---
 
@@ -283,38 +305,53 @@ docker compose up
 ### 完整安装
 
 #### 前置条件
-- [OpenClaw](https://openclaw.ai) 已安装
+
+二选一安装运行时：
+
+- **Hermes Agent（推荐）**：用于新部署和双引擎验证。
+- **OpenClaw**：用于兼容原有 OpenClaw Agent / Gateway 部署。
+
+通用依赖：
+
 - Python 3.10+
+- Node.js 18+（仅本地重建 React 前端时需要）
 - macOS / Linux
 
 #### 安装
 
 ```bash
-git clone https://github.com/cft0808/edict.git
-cd edict
+git clone git@github.com:jiangnan-later/edict-dualengines.git
+cd edict-dualengines
 chmod +x install.sh && ./install.sh
 ```
 
 安装脚本自动完成：
 - ✅ 创建全量 Agent Workspace（含太子/吏部/早朝，兼容历史 main）
 - ✅ 写入各省部 SOUL.md（角色人格 + 工作流规则 + 数据清洗规范）
-- ✅ 注册 Agent 及权限矩阵到 `openclaw.json`
+- ✅ 注册 Agent 及权限矩阵到运行时配置
+- ✅ **Hermes 默认配置回退**：`agent_config.json` 为空时自动读取 Hermes 模型与本地 Skills
 - ✅ **符号链接统一数据**（各 Workspace 的 data/scripts → 项目目录，确保数据一致）
-- ✅ **设置 Agent 间通信可见性**（`sessions.visibility all`，解决消息不可达问题）
-- ✅ **同步 API Key 到所有 Agent**（自动从已配置的 Agent 复制）
+- ✅ **设置 Agent 间通信可见性**（OpenClaw 部署下使用 `sessions.visibility all`）
+- ✅ **同步 API Key 到所有 Agent**（OpenClaw 部署下自动从已配置的 Agent 复制）
 - ✅ 构建 React 前端（需 Node.js 18+，如未安装则跳过）
 - ✅ 初始化数据目录 + 首次数据同步（含官员统计）
-- ✅ 重启 Gateway 使配置生效
+- ✅ 重启/检测运行时使配置生效
 
-> ⚠️ **首次安装**：需先配置 API Key：`openclaw agents add taizi`，然后重新运行 `./install.sh` 同步到所有 Agent。
+> 💡 **Hermes 部署**：确保 `hermes` 命令可用，并设置 `EDICT_AGENT_RUNTIME=hermes`。Dashboard 会通过 Hermes CLI 直接派发 Agent。
+>
+> ⚠️ **OpenClaw 首次安装**：需先配置 API Key：`openclaw agents add taizi`，然后重新运行 `./install.sh` 同步到所有 Agent。
 
 #### 启动
 
 ```bash
-# 方式 1：一键启动（推荐）
+# 方式 1：Hermes 引擎启动（推荐）
+export EDICT_AGENT_RUNTIME=hermes
+python3 dashboard/server.py --host 0.0.0.0 --port 7891
+
+# 方式 2：一键启动（Dashboard + 数据刷新）
 chmod +x start.sh && ./start.sh
 
-# 方式 2：分别启动
+# 方式 3：分别启动
 bash scripts/run_loop.sh &      # 数据刷新循环
 python3 dashboard/server.py     # 看板服务器
 
@@ -345,6 +382,29 @@ bash edict.sh stop     # 停止
 
 > 💡 详细教程请看 [Getting Started 指南](docs/getting-started.md)
 
+### 双引擎配置
+
+Dashboard 通过 `EDICT_AGENT_RUNTIME` 选择派发引擎：
+
+| Runtime | 适用场景 | 启动方式 |
+|---|---|---|
+| `hermes` | 新部署、Hermes Agent 用户、无需 OpenClaw Gateway | `export EDICT_AGENT_RUNTIME=hermes` |
+| `openclaw` | 旧版 OpenClaw 工作区、已配置 OpenClaw Gateway | `export EDICT_AGENT_RUNTIME=openclaw` |
+
+Hermes 模式下：
+
+- 模型配置面板会读取 `~/.hermes/config.yaml` 的默认模型和 provider。
+- 技能配置面板会扫描 `~/.hermes/skills/**/SKILL.md` 并展示本地 Skills。
+- 自动派发命令形如：`hermes chat -q "..." --source edict --max-turns 90 --quiet`。
+
+如果看板提示“请先启动本地服务器”或技能无法加载，请先检查：
+
+```bash
+curl http://127.0.0.1:7891/healthz
+curl http://127.0.0.1:7891/api/agent-config
+curl http://127.0.0.1:7891/api/remote-skills-list
+```
+
 ---
 
 ## 🏛️ 架构
@@ -356,7 +416,7 @@ bash edict.sh stop     # 停止
                            └─────────────────┬─────────────────┘
                                              │ 下旨
                            ┌─────────────────▼─────────────────┐
-                           │          � 太子 (taizi)            │
+                           │          🤴 太子 (taizi)            │
                            │    分拣：闲聊直接回 / 旨意建任务      │
                            └─────────────────┬─────────────────┘
                                              │ 传旨
@@ -389,7 +449,7 @@ bash edict.sh stop     # 停止
 
 | 部门 | Agent ID | 职责 | 擅长领域 |
 |------|----------|------|---------|
-| � **太子** | `taizi` | 消息分拣、需求整理 | 闲聊识别、旨意提炼、标题概括 |
+| 🤴 **太子** | `taizi` | 消息分拣、需求整理 | 闲聊识别、旨意提炼、标题概括 |
 | 📜 **中书省** | `zhongshu` | 接旨、规划、拆解 | 需求理解、任务分解、方案设计 |
 | 🔍 **门下省** | `menxia` | 审议、把关、封驳 | 质量评审、风险识别、标准把控 |
 | 📮 **尚书省** | `shangshu` | 派发、协调、汇总 | 任务调度、进度跟踪、结果整合 |
