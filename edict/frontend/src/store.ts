@@ -253,6 +253,8 @@ interface AppStore {
   // Data
   liveStatus: LiveStatus | null;
   agentConfig: AgentConfig | null;
+  agentConfigLoading: boolean;
+  agentConfigError: string | null;
   changeLog: ChangeLogEntry[];
   officialsData: OfficialsData | null;
   agentsStatusData: AgentsStatusData | null;
@@ -296,6 +298,8 @@ let _toastId = 0;
 export const useStore = create<AppStore>((set, get) => ({
   liveStatus: null,
   agentConfig: null,
+  agentConfigLoading: false,
+  agentConfigError: null,
   changeLog: [],
   officialsData: null,
   agentsStatusData: null,
@@ -350,12 +354,13 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 
   loadAgentConfig: async () => {
+    set({ agentConfigLoading: true, agentConfigError: null });
     try {
       const cfg = await api.agentConfig();
       const log = await api.modelChangeLog();
-      set({ agentConfig: cfg, changeLog: log });
-    } catch {
-      // silently fail
+      set({ agentConfig: cfg, changeLog: log, agentConfigLoading: false, agentConfigError: null });
+    } catch (err) {
+      set({ agentConfigLoading: false, agentConfigError: err instanceof Error ? err.message : '加载失败' });
     }
   },
 

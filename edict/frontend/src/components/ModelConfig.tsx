@@ -27,6 +27,8 @@ const CHANNELS = [
 
 export default function ModelConfig() {
   const agentConfig = useStore((s) => s.agentConfig);
+  const agentConfigLoading = useStore((s) => s.agentConfigLoading);
+  const agentConfigError = useStore((s) => s.agentConfigError);
   const changeLog = useStore((s) => s.changeLog);
   const loadAgentConfig = useStore((s) => s.loadAgentConfig);
   const toast = useStore((s) => s.toast);
@@ -54,7 +56,18 @@ export default function ModelConfig() {
   }, [agentConfig]);
 
   if (!agentConfig?.agents) {
-    return <div className="empty" style={{ gridColumn: '1/-1' }}>⚠️ 请先启动本地服务器</div>;
+    if (agentConfigLoading) {
+      return <div className="empty" style={{ gridColumn: '1/-1' }}>⟳ 正在加载模型配置…</div>;
+    }
+    return (
+      <div className="empty" style={{ gridColumn: '1/-1' }}>
+        ⚠️ 模型配置加载失败{agentConfigError ? `：${agentConfigError}` : ''}
+        <br />
+        <button className="btn btn-p" style={{ marginTop: 12 }} onClick={() => loadAgentConfig()}>
+          重试加载
+        </button>
+      </div>
+    );
   }
 
   const models = agentConfig.knownModels?.length

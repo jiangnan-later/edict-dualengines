@@ -55,6 +55,8 @@ const COMMUNITY_SOURCES = [
 
 export default function SkillsConfig() {
   const agentConfig = useStore((s) => s.agentConfig);
+  const agentConfigLoading = useStore((s) => s.agentConfigLoading);
+  const agentConfigError = useStore((s) => s.agentConfigError);
   const loadAgentConfig = useStore((s) => s.loadAgentConfig);
   const toast = useStore((s) => s.toast);
 
@@ -209,7 +211,18 @@ export default function SkillsConfig() {
   };
 
   if (!agentConfig?.agents) {
-    return <div className="empty">无法加载</div>;
+    if (agentConfigLoading) {
+      return <div className="empty">⟳ 正在加载技能配置…</div>;
+    }
+    return (
+      <div className="empty">
+        ⚠️ 技能配置加载失败{agentConfigError ? `：${agentConfigError}` : ''}
+        <br />
+        <button className="btn btn-p" style={{ marginTop: 12 }} onClick={() => loadAgentConfig()}>
+          重试加载
+        </button>
+      </div>
+    );
   }
 
   // ── 本地技能面板 ──

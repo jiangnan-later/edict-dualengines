@@ -26,3 +26,17 @@ def test_create_task_payload_starts_at_taizi_for_quick_decree():
     assert "org: '太子'" in src
     assert "targetDept: quickDept" in src
     assert "templateId: 'quick-decree'" in src
+
+
+def test_settings_panels_have_loading_and_retry_instead_of_false_server_errors():
+    model = read("edict/frontend/src/components/ModelConfig.tsx")
+    skills = read("edict/frontend/src/components/SkillsConfig.tsx")
+    store = read("edict/frontend/src/store.ts")
+    assert "agentConfigLoading" in store
+    assert "agentConfigError" in store
+    assert "正在加载模型配置" in model
+    assert "模型配置加载失败" in model
+    assert "正在加载技能配置" in skills
+    assert "技能配置加载失败" in skills
+    assert "请先启动本地服务器" not in model
+    assert "return <div className=\"empty\">无法加载</div>;" not in skills
