@@ -34,6 +34,9 @@ def test_settings_panels_have_loading_and_retry_instead_of_false_server_errors()
     store = read("edict/frontend/src/store.ts")
     assert "agentConfigLoading" in store
     assert "agentConfigError" in store
+    assert "agentConfigInFlight" in store
+    assert "fetchAgentConfigWithRetry" in store
+    assert "loadModelChangeLogSafely" in store
     assert "正在加载模型配置" in model
     assert "模型配置加载失败" in model
     assert "正在加载技能配置" in skills

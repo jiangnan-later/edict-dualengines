@@ -294,6 +294,31 @@ interface AppStore {
 }
 
 let _toastId = 0;
+let agentConfigInFlight: Promise<{ cfg: AgentConfig; log: ChangeLogEntry[] }> | null = null;
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function fetchAgentConfigWithRetry(attempts = 3): Promise<AgentConfig> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      return await api.agentConfig();
+    } catch (err) {
+      lastErr = err;
+      if (i < attempts - 1) await wait(300 * (i + 1));
+    }
+  }
+  throw lastErr;
+}
+
+async function loadModelChangeLogSafely(): Promise<ChangeLogEntry[]> {
+  try {
+    const log = await api.modelChangeLog();
+    return Array.isArray(log) ? log : [];
+  } catch {
+    return [];
+  }
+}
 
 export const useStore = create<AppStore>((set, get) => ({
   liveStatus: null,
@@ -356,8 +381,15 @@ export const useStore = create<AppStore>((set, get) => ({
   loadAgentConfig: async () => {
     set({ agentConfigLoading: true, agentConfigError: null });
     try {
-      const cfg = await api.agentConfig();
-      const log = await api.modelChangeLog();
+      if (!agentConfigInFlight) {
+        agentConfigInFlight = Promise.all([
+          fetchAgentConfigWithRetry(),
+          loadModelChangeLogSafely(),
+        ]).then(([cfg, log]) => ({ cfg, log })).finally(() => {
+          agentConfigInFlight = null;
+        });
+      }
+      const { cfg, log } = await agentConfigInFlight;
       set({ agentConfig: cfg, changeLog: log, agentConfigLoading: false, agentConfigError: null });
     } catch (err) {
       set({ agentConfigLoading: false, agentConfigError: err instanceof Error ? err.message : '加载失败' });
