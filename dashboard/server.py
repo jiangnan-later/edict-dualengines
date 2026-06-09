@@ -12,7 +12,7 @@ Endpoints:
   GET  /api/last-result        → data/last_model_change_result.json
 """
 import json, pathlib, subprocess, sys, threading, argparse, datetime, logging, re, os, socket, shutil
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
@@ -2738,6 +2738,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(code)
             self.send_header('Content-Type', 'application/json; charset=utf-8')
             self.send_header('Content-Length', str(len(body)))
+            self.send_header('Cache-Control', 'no-store, max-age=0')
             cors_headers(self)
             self.end_headers()
             self.wfile.write(body)
@@ -2753,6 +2754,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-Type', mime)
             self.send_header('Content-Length', str(len(body)))
+            self.send_header('Cache-Control', 'no-store, max-age=0')
             cors_headers(self)
             self.end_headers()
             self.wfile.write(body)
@@ -3278,7 +3280,8 @@ def main():
         f'http://127.0.0.1:{args.port}', f'http://localhost:{args.port}',
     }
 
-    server = HTTPServer((args.host, args.port), Handler)
+    server = ThreadingHTTPServer((args.host, args.port), Handler)
+    server.daemon_threads = True
     log.info(f'三省六部看板启动 → http://{args.host}:{args.port}')
     print(f'   按 Ctrl+C 停止')
 
