@@ -1,4 +1,5 @@
-import { useStore, isEdict, isArchived, getPipeStatus, stateLabel, deptColor, PIPE } from '../store';
+import { useState } from 'react';
+import { useStore, isEdict, isArchived, getPipeStatus, stateLabel, deptColor, PIPE, DEPTS } from '../store';
 import { api, type Task } from '../api';
 
 // 排序权重
@@ -158,6 +159,9 @@ export default function EdictBoard() {
   const setEdictFilter = useStore((s) => s.setEdictFilter);
   const toast = useStore((s) => s.toast);
   const loadAll = useStore((s) => s.loadAll);
+  const [quickTitle, setQuickTitle] = useState('');
+  const [quickDept, setQuickDept] = useState('工部');
+  const [quickSubmitting, setQuickSubmitting] = useState(false);
 
   const tasks = liveStatus?.tasks || [];
   const allEdicts = tasks.filter(isEdict);
@@ -191,8 +195,61 @@ export default function EdictBoard() {
     } catch { toast('服务器连接失败', 'err'); }
   };
 
+  const handleCreateEdict = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const title = quickTitle.trim();
+    if (!title) {
+      toast('请先填写旨意内容', 'err');
+      return;
+    }
+    setQuickSubmitting(true);
+    try {
+      const r = await api.createTask({
+        title: title.substring(0, 120),
+        org: '太子',
+        targetDept: quickDept,
+        priority: 'normal',
+        templateId: 'quick-decree',
+        params: { decree: title, targetDept: quickDept },
+      });
+      if (r.ok) {
+        toast(`📜 ${r.taskId || '新旨意'} 已下达给太子`);
+        setQuickTitle('');
+        loadAll();
+      } else {
+        toast(r.error || '下旨失败', 'err');
+      }
+    } catch {
+      toast('服务器连接失败', 'err');
+    } finally {
+      setQuickSubmitting(false);
+    }
+  };
+
   return (
     <div>
+      <form className="quick-edict" onSubmit={handleCreateEdict}>
+        <div className="qe-copy">
+          <div className="qe-title">📜 快速下旨</div>
+          <div className="qe-sub">直接创建一道旨意，由太子分拣后进入三省六部流程。</div>
+        </div>
+        <input
+          className="qe-input"
+          placeholder="例如：排查线上 Dashboard 模型配置无法打开的问题，并给出修复报告"
+          value={quickTitle}
+          onChange={(e) => setQuickTitle(e.target.value)}
+          maxLength={240}
+        />
+        <select className="qe-select" value={quickDept} onChange={(e) => setQuickDept(e.target.value)}>
+          {DEPTS.filter((d) => !['taizi', 'zaochao'].includes(d.id)).map((d) => (
+            <option key={d.id} value={d.label}>{d.emoji} {d.label}</option>
+          ))}
+        </select>
+        <button className="qe-submit" type="submit" disabled={quickSubmitting}>
+          {quickSubmitting ? '下旨中…' : '下旨'}
+        </button>
+      </form>
+
       {/* Archive Bar */}
       <div className="archive-bar">
         <span className="ab-label">筛选:</span>

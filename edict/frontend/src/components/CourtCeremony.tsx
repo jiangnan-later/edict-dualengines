@@ -37,7 +37,7 @@ export default function CourtCeremony() {
   const dateStr = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 · ${days[d.getDay()]}曜日`;
 
   return (
-    <div className={`ceremony-bg${out ? ' out' : ''}`} onClick={skip}>
+    <div className={`ceremony-bg${out ? ' out' : ''}`} style={{ pointerEvents: 'none' }} aria-hidden="true">
       <div className="crm-glow" />
       <div className="crm-line1 in">🏛 早朝开始</div>
       <div className="crm-line2 in">有事启奏，无事退朝</div>
@@ -45,7 +45,7 @@ export default function CourtCeremony() {
         待办 {pending} 件 · 已完成 {done} 件{overdue > 0 && ` · ⚠ 超期 ${overdue} 件`}
       </div>
       <div className="crm-date in">{dateStr}</div>
-      <div className="crm-skip">点击任意处跳过</div>
+      <div className="crm-skip">导航可直接点击，仪式将自动退场</div>
     </div>
   );
 }
